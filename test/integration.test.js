@@ -33,8 +33,11 @@ async function fileExists(p) {
  * Creates a local bare git repo populated with a conventions structure:
  *   steering/code-style.md
  *   skills/review/SKILL.md
+ *   agents/helper.md
+ *   agents/reviewer.json
  *   python/steering/python-rules.md
  *   python/skills/pytest/SKILL.md
+ *   python/agents/py-helper.json
  *   cdk/steering/construct-patterns.md
  */
 async function setupFixtures() {
@@ -56,8 +59,11 @@ async function setupFixtures() {
     "steering/code-style.md": "# Code Style\nUse consistent formatting.",
     "steering/security.md": "# Security\nNo secrets in code.",
     "skills/review/SKILL.md": "# Code Review Skill",
+    "agents/helper.md": "---\nname: helper\ndescription: A shared helper agent.\n---\nYou are a helper.",
+    "agents/reviewer.json": JSON.stringify({ name: "reviewer", description: "A shared review agent." }),
     "python/steering/python-rules.md": "# Python Rules\nUse type hints.",
     "python/skills/pytest/SKILL.md": "# Pytest Skill",
+    "python/agents/py-helper.json": JSON.stringify({ name: "py-helper", description: "A python agent." }),
     "cdk/steering/construct-patterns.md": "# CDK Patterns",
   };
 
@@ -98,13 +104,16 @@ describe("init (integration)", () => {
     expect(await fileExists(join(projectDir, ".kiro/steering/code-style.md"))).toBe(true);
     expect(await fileExists(join(projectDir, ".kiro/steering/security.md"))).toBe(true);
     expect(await fileExists(join(projectDir, ".kiro/skills/review/SKILL.md"))).toBe(true);
+    // shared agents (both .md and .json)
+    expect(await fileExists(join(projectDir, ".kiro/agents/helper.md"))).toBe(true);
+    expect(await fileExists(join(projectDir, ".kiro/agents/reviewer.json"))).toBe(true);
 
     // no type-specific files
     expect(await fileExists(join(projectDir, ".kiro/steering/python/python-rules.md"))).toBe(false);
 
     const manifest = await readManifest(projectDir);
     expect(manifest).toHaveProperty("shared");
-    expect(manifest.shared).toHaveLength(3);
+    expect(manifest.shared).toHaveLength(5);
   });
 
   it("syncs shared + type-specific files", async () => {
@@ -205,6 +214,65 @@ describe("init (integration)", () => {
 
     // should not create a .gitignore
     expect(await fileExists(join(projectDir, ".gitignore"))).toBe(false);
+  });
+});
+
+// ─── agents (integration) ────────────────────────────────────────────────────
+
+describe("agents (integration)", () => {
+  it("syncs shared agents in both .md and .json formats", async () => {
+    const config = await loadConfig({ repo: bareRepo, branch: "main" }, []);
+    await init(config);
+
+    expect(await fileExists(join(projectDir, ".kiro/agents/helper.md"))).toBe(true);
+    expect(await fileExists(join(projectDir, ".kiro/agents/reviewer.json"))).toBe(true);
+
+    const manifest = await readManifest(projectDir);
+    expect(manifest.shared).toContain(".kiro/agents/helper.md");
+    expect(manifest.shared).toContain(".kiro/agents/reviewer.json");
+  });
+
+  it("flattens type-specific agents into .kiro/agents", async () => {
+    const config = await loadConfig({ repo: bareRepo, branch: "main" }, ["python"]);
+    await init(config);
+
+    // python agent lands flat in .kiro/agents, not nested under a type folder
+    expect(await fileExists(join(projectDir, ".kiro/agents/py-helper.json"))).toBe(true);
+    expect(await fileExists(join(projectDir, ".kiro/agents/python/py-helper.json"))).toBe(false);
+
+    const manifest = await readManifest(projectDir);
+    expect(manifest.python).toContain(".kiro/agents/py-helper.json");
+  });
+
+  it("re-init is idempotent for agents", async () => {
+    const config = await loadConfig({ repo: bareRepo, branch: "main" }, ["python"]);
+    await init(config);
+    const manifest1 = await readManifest(projectDir);
+
+    await init(config);
+    const manifest2 = await readManifest(projectDir);
+
+    expect(manifest2).toEqual(manifest1);
+  });
+
+  it("does not create .kiro/agents when the remote has no agents folder", async () => {
+    // build a separate remote without any agents/ directory
+    const workTree2 = join(testDir, "work-noagents");
+    const bareRepo2 = join(testDir, "remote-noagents.git");
+    await mkdir(join(workTree2, "steering"), { recursive: true });
+    await exec("git", ["init", workTree2]);
+    await exec("git", ["-C", workTree2, "config", "user.email", "test@test.com"]);
+    await exec("git", ["-C", workTree2, "config", "user.name", "Test"]);
+    await writeFile(join(workTree2, "steering/only.md"), "# Only steering");
+    await exec("git", ["-C", workTree2, "add", "."]);
+    await exec("git", ["-C", workTree2, "commit", "-m", "initial"]);
+    await exec("git", ["clone", "--bare", workTree2, bareRepo2]);
+
+    const config = await loadConfig({ repo: bareRepo2, branch: "main" }, []);
+    await init(config);
+
+    expect(await fileExists(join(projectDir, ".kiro/steering/only.md"))).toBe(true);
+    expect(await fileExists(join(projectDir, ".kiro/agents"))).toBe(false);
   });
 });
 

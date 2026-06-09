@@ -11,43 +11,57 @@ import { buildPaths, loadConfig, updateDotkirorc } from "../src/config.js";
 // ─── buildPaths ─────────────────────────────────────────────────────────────
 
 describe("buildPaths", () => {
-  it("returns shared steering + skills when no types given", () => {
+  it("returns shared steering + skills + agents when no types given", () => {
     const paths = buildPaths([]);
     expect(paths).toEqual([
-      { src: "steering", dest: ".kiro/steering", label: "Steering (shared)", type: "shared" },
-      { src: "skills", dest: ".kiro/skills", label: "Skills (shared)", type: "shared" },
+      { src: "steering", dest: ".kiro/steering", label: "Steering (shared)", type: "shared", extensions: [".md"] },
+      { src: "skills", dest: ".kiro/skills", label: "Skills (shared)", type: "shared", extensions: [".md"] },
+      { src: "agents", dest: ".kiro/agents", label: "Agents (shared)", type: "shared", extensions: [".md", ".json"] },
     ]);
   });
 
   it("adds type-specific paths for each type", () => {
     const paths = buildPaths(["python"]);
-    expect(paths).toHaveLength(4);
-    expect(paths[2]).toEqual({
+    expect(paths).toHaveLength(6);
+    expect(paths[3]).toEqual({
       src: "python/steering",
       dest: ".kiro/steering/python",
       label: "Steering (python)",
       type: "python",
+      extensions: [".md"],
     });
-    expect(paths[3]).toEqual({
+    expect(paths[4]).toEqual({
       src: "python/skills",
       dest: ".kiro/skills",
       label: "Skills (python)",
       type: "python",
+      extensions: [".md"],
+    });
+    expect(paths[5]).toEqual({
+      src: "python/agents",
+      dest: ".kiro/agents",
+      label: "Agents (python)",
+      type: "python",
+      extensions: [".md", ".json"],
     });
   });
 
   it("handles multiple types", () => {
     const paths = buildPaths(["python", "cdk"]);
-    // 2 shared + 2 per type × 2 types = 6
-    expect(paths).toHaveLength(6);
+    // 3 shared + 3 per type × 2 types = 9
+    expect(paths).toHaveLength(9);
     const types = paths.map((p) => p.type);
-    expect(types).toEqual(["shared", "shared", "python", "python", "cdk", "cdk"]);
+    expect(types).toEqual([
+      "shared", "shared", "shared",
+      "python", "python", "python",
+      "cdk", "cdk", "cdk",
+    ]);
   });
 
   it("skips empty string and 'default' types", () => {
     const paths = buildPaths(["", "default", "python"]);
-    // only shared (2) + python (2)
-    expect(paths).toHaveLength(4);
+    // only shared (3) + python (3)
+    expect(paths).toHaveLength(6);
     expect(paths.every((p) => p.type === "shared" || p.type === "python")).toBe(true);
   });
 
@@ -67,27 +81,27 @@ describe("buildPaths", () => {
 
   // ─── PBT ────────────────────────────────────────────────────────────────
 
-  it("always includes exactly 2 shared paths", () => {
+  it("always includes exactly 3 shared paths", () => {
     fc.assert(
       fc.property(
         fc.array(fc.stringMatching(/^[a-z][a-z0-9-]{0,9}[a-z0-9]$/).filter((s) => s !== "default"), { maxLength: 10 }),
         (types) => {
           const paths = buildPaths(types);
           const shared = paths.filter((p) => p.type === "shared");
-          expect(shared).toHaveLength(2);
+          expect(shared).toHaveLength(3);
         }
       )
     );
   });
 
-  it("adds exactly 2 paths per non-empty, non-default type", () => {
+  it("adds exactly 3 paths per non-empty, non-default type", () => {
     fc.assert(
       fc.property(
         fc.array(fc.stringMatching(/^[a-z][a-z0-9-]{0,9}[a-z0-9]$/).filter((s) => s !== "default"), { maxLength: 10 }),
         (types) => {
           const paths = buildPaths(types);
-          // 2 shared + 2 per valid type
-          expect(paths).toHaveLength(2 + types.length * 2);
+          // 3 shared + 3 per valid type
+          expect(paths).toHaveLength(3 + types.length * 3);
         }
       )
     );
@@ -130,6 +144,36 @@ describe("buildPaths", () => {
       )
     );
   });
+
+  it("type-specific agents always flatten to .kiro/agents", () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.stringMatching(/^[a-z][a-z0-9-]{0,18}[a-z0-9]$/).filter((s) => s !== "default"),
+          { minLength: 1, maxLength: 5 }
+        ),
+        (types) => {
+          const paths = buildPaths(types);
+          for (const p of paths) {
+            if (p.src.endsWith("/agents")) {
+              expect(p.dest).toBe(".kiro/agents");
+            }
+          }
+        }
+      )
+    );
+  });
+
+  it("agents paths accept both .md and .json; steering and skills accept only .md", () => {
+    const paths = buildPaths(["python"]);
+    for (const p of paths) {
+      if (p.src.endsWith("agents")) {
+        expect(p.extensions).toEqual([".md", ".json"]);
+      } else {
+        expect(p.extensions).toEqual([".md"]);
+      }
+    }
+  });
 });
 
 // ─── loadConfig ─────────────────────────────────────────────────────────────
@@ -168,7 +212,7 @@ describe("loadConfig", () => {
 
   it("builds paths from types", async () => {
     const config = await loadConfig({}, ["python"]);
-    expect(config.paths).toHaveLength(4);
+    expect(config.paths).toHaveLength(6);
   });
 
   it("defaults types to empty array when none provided", async () => {

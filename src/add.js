@@ -50,10 +50,10 @@ export async function add(config) {
     // only sync the type-specific paths, not shared
     const typePaths = paths.filter((p) => p.type !== "shared");
 
-    for (const { src, dest, label, type } of typePaths) {
+    for (const { src, dest, label, type, extensions } of typePaths) {
       const srcDir = join(tmpDir, src);
       const destDir = join(cwd, dest);
-      const { added, updated, unchanged, files } = await copyDir(srcDir, destDir, label);
+      const { added, updated, unchanged, files } = await copyDir(srcDir, destDir, label, extensions);
       totalAdded += added;
       totalUpdated += updated;
       totalUnchanged += unchanged;
@@ -75,7 +75,7 @@ export async function add(config) {
 
     const total = totalAdded + totalUpdated + totalUnchanged;
     if (total === 0) {
-      console.log(`No .md files found for ${types.join(", ")}.`);
+      console.log(`No files found for ${types.join(", ")}.`);
     } else {
       const parts = [];
       if (totalAdded > 0) parts.push(`${totalAdded} added`);

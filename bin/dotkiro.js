@@ -28,7 +28,7 @@ if (values.help || !command) {
   console.log(`Usage: dotkiro <command> [types...] [options]
 
 Commands:
-  init [types...]   Fetch steering files and skills from a remote repo
+  init [types...]   Fetch steering files, skills, and agents from a remote repo
                     Types map to folders in the repo (e.g. "dotkiro init python typescript")
                     Omit types to pull shared files only
   add <types...>    Add type-specific conventions without affecting existing ones

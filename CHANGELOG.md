@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Distribute custom agents alongside steering and skills — `agents/` (shared) and `<type>/agents/` are synced into `.kiro/agents/`
+- Agents support both `.md` (markdown subagents) and `.json` (CLI agent configs); type-specific agents are flattened into `.kiro/agents/`
+
 ## 0.1.0
 
 Initial release.
