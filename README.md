@@ -53,8 +53,8 @@ your-conventions-repo/
     <skill-name>/
       SKILL.md
   agents/             ← shared, always synced
-    *.md              ← markdown subagents
-    *.json            ← CLI agent configs
+    *.md
+    *.json
   <type>/             ← type-specific (e.g. python, cdk, platform-team)
     steering/
       *.md
