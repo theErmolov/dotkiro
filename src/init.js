@@ -44,7 +44,7 @@ async function filesEqual(a, b) {
   }
 }
 
-export async function copyDir(srcDir, destDir, label) {
+export async function copyDir(srcDir, destDir, label, extensions = [".md"]) {
   let entries;
   try {
     entries = await readdir(srcDir, { withFileTypes: true });
@@ -64,12 +64,12 @@ export async function copyDir(srcDir, destDir, label) {
     const destPath = join(destDir, entry.name);
 
     if (entry.isDirectory()) {
-      const sub = await copyDir(srcPath, destPath, null);
+      const sub = await copyDir(srcPath, destPath, null, extensions);
       added += sub.added;
       updated += sub.updated;
       unchanged += sub.unchanged;
       files.push(...sub.files);
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+    } else if (entry.isFile() && extensions.some((ext) => entry.name.endsWith(ext))) {
       const equal = await filesEqual(srcPath, destPath);
       if (equal) {
         unchanged++;
@@ -172,10 +172,10 @@ export async function init(config) {
     let totalUnchanged = 0;
     const filesByType = {};
 
-    for (const { src, dest, label, type } of paths) {
+    for (const { src, dest, label, type, extensions } of paths) {
       const srcDir = join(tmpDir, src);
       const destDir = join(cwd, dest);
-      const { added, updated, unchanged, files } = await copyDir(srcDir, destDir, label);
+      const { added, updated, unchanged, files } = await copyDir(srcDir, destDir, label, extensions);
       totalAdded += added;
       totalUpdated += updated;
       totalUnchanged += unchanged;
@@ -231,7 +231,7 @@ export async function init(config) {
 
     const total = totalAdded + totalUpdated + totalUnchanged;
     if (total === 0 && stale.length === 0) {
-      console.log("No .md files found in the configured paths.");
+      console.log("No files found in the configured paths.");
     } else {
       const parts = [];
       if (totalAdded > 0) parts.push(`${totalAdded} added`);

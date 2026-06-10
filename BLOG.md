@@ -1,12 +1,12 @@
 # Keep Your Team's AI Coding Conventions in Sync with Kiro
 
-When a team adopts an AI coding assistant like [Kiro](https://kiro.dev), something interesting happens. Developers start writing steering files — markdown documents that tell the AI how to write code, what patterns to follow, and what to avoid. They create skills — reusable instructions for common tasks like code reviews or deployment checks.
+When a team adopts an AI coding assistant like [Kiro](https://kiro.dev), something interesting happens. Developers start writing steering files — markdown documents that tell the AI how to write code, what patterns to follow, and what to avoid. They create skills — reusable instructions for common tasks like code reviews or deployment checks. They build custom agents — specialized assistants tuned for a particular job.
 
 This works great for one person. But across a team of ten, twenty, or fifty developers? You end up with a dozen slightly different versions of the same rules, scattered across projects, copy-pasted from Slack, and slowly drifting apart.
 
 ## The problem
 
-Kiro reads steering files from `.kiro/steering/` and skills from `.kiro/skills/` inside your project. These files shape how the AI behaves — your code style preferences, testing conventions, security rules, and more.
+Kiro reads steering files from `.kiro/steering/`, skills from `.kiro/skills/`, and custom agents from `.kiro/agents/` inside your project. These files shape how the AI behaves — your code style preferences, testing conventions, security rules, specialized assistants, and more.
 
 Without a system in place, teams hit a few common issues:
 
@@ -23,6 +23,7 @@ Store your team's conventions in a single Git repository. Build a small CLI that
 graph LR
     A[Central Git Repo] -->|dotkiro init| B[.kiro/steering/]
     A -->|dotkiro init| C[.kiro/skills/]
+    A -->|dotkiro init| D[.kiro/agents/]
 ```
 
 That's the whole pattern. A Git repo becomes your single source of truth. A CLI becomes the distribution mechanism. npm makes it frictionless.
@@ -41,6 +42,9 @@ my-conventions/
   skills/             ← Shared skills, always pulled
     code-review/
       SKILL.md
+  agents/             ← Shared agents, always pulled
+    code-reviewer.md
+    aws-expert.json
   python/             ← Extra rules for Python projects
     steering/
       python-rules.md
@@ -62,7 +66,7 @@ sequenceDiagram
 
     Dev->>CLI: dotkiro init python
     CLI->>Repo: Shallow clone
-    Repo-->>CLI: Steering files + skills
+    Repo-->>CLI: Steering files, skills + agents
     CLI->>Project: Sync shared + Python conventions
     CLI-->>Dev: Done — 6 added
 ```
