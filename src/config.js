@@ -16,6 +16,7 @@ export function buildPaths(types) {
     { src: "steering", dest: ".kiro/steering", label: "Steering (shared)", type: "shared", ext: ".md" },
     { src: "skills", dest: ".kiro/skills", label: "Skills (shared)", type: "shared", ext: ".md" },
     { src: "hooks", dest: ".kiro/hooks", label: "Hooks (shared)", type: "shared", ext: ".kiro.hook" },
+    { src: "agents", dest: ".kiro/agents", label: "Agents (shared)", type: "shared", ext: [".md", ".json"] },
   ];
 
   for (const type of types) {
@@ -27,6 +28,7 @@ export function buildPaths(types) {
         { src: `${type}/steering`, dest: `.kiro/steering/${type}`, label: `Steering (${type})`, type, ext: ".md" },
         { src: `${type}/skills`, dest: ".kiro/skills", label: `Skills (${type})`, type, ext: ".md" },
         { src: `${type}/hooks`, dest: `.kiro/hooks/${type}`, label: `Hooks (${type})`, type, ext: ".kiro.hook" },
+        { src: `${type}/agents`, dest: ".kiro/agents", label: `Agents (${type})`, type, ext: [".md", ".json"] },
       );
     }
   }

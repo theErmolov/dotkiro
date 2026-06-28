@@ -1,7 +1,7 @@
 {
   "name": "dotkiro",
   "version": "0.2.0",
-  "description": "CLI to sync Kiro steering files and skills from a central repo",
+  "description": "CLI to sync Kiro steering files, skills, and agents from a central repo",
   "type": "module",
   "bin": {
     "dotkiro": "./bin/dotkiro.js"
@@ -25,6 +25,7 @@
     "kiro",
     "steering",
     "skills",
+    "agents",
     "cli",
     "dotkiro"
   ],

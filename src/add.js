@@ -75,7 +75,7 @@ export async function add(config) {
 
     const total = totalAdded + totalUpdated + totalUnchanged;
     if (total === 0) {
-      console.log(`No .md files found for ${types.join(", ")}.`);
+      console.log(`No files found for ${types.join(", ")}.`);
     } else {
       const parts = [];
       if (totalAdded > 0) parts.push(`${totalAdded} added`);

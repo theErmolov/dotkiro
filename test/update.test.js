@@ -45,6 +45,7 @@ async function setupFixtures() {
   const files = {
     "steering/code-style.md": "# Code Style v1",
     "skills/review/SKILL.md": "# Review Skill v1",
+    "agents/team.md": "---\nname: team\ndescription: Team agent v1.\n---\nv1",
     "python/steering/python-rules.md": "# Python Rules v1",
   };
 
@@ -145,6 +146,26 @@ describe("update", () => {
     await update({});
 
     expect(await fileExists(join(projectDir, ".kiro/steering/code-style.md"))).toBe(false);
+  });
+
+  it("re-syncs agent files (both .md and .json) added or changed in remote", async () => {
+    // initial init shared only — pulls the existing agents/team.md
+    const config = await loadConfig({ repo: bareRepo, branch: "main" }, []);
+    await init(config);
+    expect(await fileExists(join(projectDir, ".kiro/agents/team.md"))).toBe(true);
+
+    // change the markdown agent and add a new json agent in the remote
+    await writeFile(join(workTree, "agents/team.md"), "---\nname: team\ndescription: Team agent v2.\n---\nv2");
+    await writeFile(join(workTree, "agents/deployer.json"), JSON.stringify({ name: "deployer", description: "Deploy agent." }));
+    await exec("git", ["-C", workTree, "add", "."]);
+    await exec("git", ["-C", workTree, "commit", "-m", "update agents"]);
+    await exec("git", ["-C", workTree, "push", bareRepo, "main"]);
+
+    await update({});
+
+    const md = await readFile(join(projectDir, ".kiro/agents/team.md"), "utf-8");
+    expect(md).toContain("v2");
+    expect(await fileExists(join(projectDir, ".kiro/agents/deployer.json"))).toBe(true);
   });
 
   it("CLI flags override config during update", async () => {

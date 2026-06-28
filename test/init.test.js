@@ -148,6 +148,47 @@ describe("copyDir", () => {
     expect(result.files[0]).toContain("lint.kiro.hook");
   });
 
+  it("copies both .md and .json files when ext is an array", async () => {
+    const src = join(testDir, "src");
+    const dest = join(testDir, "dest");
+    await writeTestFile(src, "agent.json", "{}");
+    await writeTestFile(src, "notes.md", "# notes");
+
+    const result = await copyDir(src, dest, "test", [".md", ".json"]);
+    expect(result.added).toBe(2);
+    expect(result.files).toHaveLength(2);
+
+    const content = await readFile(join(dest, "agent.json"), "utf-8");
+    expect(content).toBe("{}");
+  });
+
+  it("ignores .json files with the default ext", async () => {
+    const src = join(testDir, "src");
+    const dest = join(testDir, "dest");
+    await writeTestFile(src, "agent.json", "{}");
+    await writeTestFile(src, "notes.md", "# notes");
+
+    const result = await copyDir(src, dest, "test");
+    expect(result.added).toBe(1);
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0]).toContain("notes.md");
+  });
+
+  it("copies the right subset from a mixed .md/.json directory", async () => {
+    const src = join(testDir, "src");
+    const dest = join(testDir, "dest");
+    await writeTestFile(src, "a.md", "# a");
+    await writeTestFile(src, "b.json", "{}");
+    await writeTestFile(src, "c.txt", "nope");
+    await writeTestFile(src, "d.yaml", "nope");
+
+    const result = await copyDir(src, dest, "test", [".md", ".json"]);
+    expect(result.added).toBe(2);
+    expect(result.files).toHaveLength(2);
+    expect(result.files.some((f) => f.endsWith("a.md"))).toBe(true);
+    expect(result.files.some((f) => f.endsWith("b.json"))).toBe(true);
+  });
+
   // ─── PBT ──────────────────────────────────────────────────────────────
 
   it("added + updated + unchanged always equals files.length", async () => {

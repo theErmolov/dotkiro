@@ -45,6 +45,7 @@ async function filesEqual(a, b) {
 }
 
 export async function copyDir(srcDir, destDir, label, ext = ".md") {
+  const exts = Array.isArray(ext) ? ext : [ext];
   let entries;
   try {
     entries = await readdir(srcDir, { withFileTypes: true });
@@ -69,7 +70,7 @@ export async function copyDir(srcDir, destDir, label, ext = ".md") {
       updated += sub.updated;
       unchanged += sub.unchanged;
       files.push(...sub.files);
-    } else if (entry.isFile() && entry.name.endsWith(ext)) {
+    } else if (entry.isFile() && exts.some((e) => entry.name.endsWith(e))) {
       const equal = await filesEqual(srcPath, destPath);
       if (equal) {
         unchanged++;
@@ -231,7 +232,7 @@ export async function init(config) {
 
     const total = totalAdded + totalUpdated + totalUnchanged;
     if (total === 0 && stale.length === 0) {
-      console.log("No .md files found in the configured paths.");
+      console.log("No files found in the configured paths.");
     } else {
       const parts = [];
       if (totalAdded > 0) parts.push(`${totalAdded} added`);

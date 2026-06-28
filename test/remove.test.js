@@ -128,6 +128,25 @@ describe("remove", () => {
     expect(Object.keys(manifest)).toEqual(["shared"]);
   });
 
+  it("removes type agent files from flat .kiro/agents while keeping shared agents", async () => {
+    // both shared and python agents live flat in .kiro/agents
+    await writeTestFile(testDir, ".kiro/agents/reviewer.json", "{}");
+    await writeTestFile(testDir, ".kiro/agents/py-helper.json", "{}");
+    await writeManifest(testDir, {
+      shared: [".kiro/agents/reviewer.json"],
+      python: [".kiro/agents/py-helper.json"],
+    });
+
+    await remove(["python"]);
+
+    expect(await fileExists(join(testDir, ".kiro/agents/reviewer.json"))).toBe(true);
+    expect(await fileExists(join(testDir, ".kiro/agents/py-helper.json"))).toBe(false);
+
+    const manifest = await readManifest(testDir);
+    expect(manifest).toHaveProperty("shared");
+    expect(manifest).not.toHaveProperty("python");
+  });
+
   // ─── PBT ──────────────────────────────────────────────────────────────
 
   it("removing all types leaves no manifest", async () => {
